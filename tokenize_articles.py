@@ -32,7 +32,7 @@ def process_texts():
                 raw_content = f.read()
             
             tree = html.fromstring(raw_content)
-            clean_text = tree.text_content()
+            clean_text = " ".join(tree.xpath("//text()"))
         except Exception:
             clean_text = re.sub(r'<[^>]+>', ' ', raw_content)
         
