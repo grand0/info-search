@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Векторный поиск по статьям</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .search-box {
+            display: flex;
+            margin-bottom: 30px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: 4px 0 0 4px;
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: 1px solid #007bff;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .result-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-title {
+            font-size: 18px;
+            margin: 0 0 5px 0;
+        }
+        .result-title a {
+            color: #1a0dab;
+            text-decoration: none;
+        }
+        .result-title a:hover {
+            text-decoration: underline;
+        }
+        .result-url {
+            color: #006621;
+            font-size: 14px;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+        }
+        .result-meta {
+            font-size: 13px;
+            color: #666;
+        }
+        .loading, .error, .no-results {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+        }
+        .error { color: #dc3545; }
+        .no-results { color: #6c757d; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Векторный поиск</h1>
+    <form class="search-box" id="searchForm">
+        <input type="text" id="query" placeholder="Введите ваш запрос..." required>
+        <button type="submit">Найти</button>
+    </form>
+
+    <div id="resultsContainer" class="results"></div>
+</div>
+
+<script>
+    document.getElementById('searchForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const query = document.getElementById('query').value.trim();
+        const resultsContainer = document.getElementById('resultsContainer');
+        
+        if (!query) return;
+        
+        resultsContainer.innerHTML = '<div class="loading">Поиск...</div>';
+        
+        try {
+            const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+            if (!response.ok) {
+                throw new Error('Сетевая ошибка при выполнении запроса');
+            }
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                resultsContainer.innerHTML = `<div class="error">${data.error}</div>`;
+                return;
+            }
+            
+            if (!data.results || data.results.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-results">По вашему запросу ничего не найдено.</div>';
+                return;
+            }
+            
+            let html = `<div>Найдено результатов: ${data.results.length} (топ-10)</div>`;
+            
+            data.results.forEach((item, index) => {
+                html += `
+                    <div class="result-item">
+                        <h3 class="result-title">
+                            ${item.snippet}
+                        </h3>
+                        <div class="result-url">[${item.doc_id}] <a href="${item.url}" target="_blank">${item.url}</a></div>
+                        <div class="result-meta">Score: ${item.score.toFixed(4)}</div>
+                    </div>
+                `;
+            });
+            
+            resultsContainer.innerHTML = html;
+            
+        } catch (error) {
+            resultsContainer.innerHTML = `<div class="error">Произошла ошибка: ${error.message}</div>`;
+        }
+    });
+</script>
+
+</body>
+</html>
